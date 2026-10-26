@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"encoding/json"
 	"os"
 	"strconv"
 	"time"
@@ -18,6 +19,13 @@ type ConfigEnv struct {
 type RedisConfig struct {
 	Host string
 	Port string
+}
+
+type tokenConfigDTO struct {
+	Token  string `json:"token"`
+	Limit  int    `json:"limit"`
+	Window string `json:"window"`
+	Block  string `json:"block"`
 }
 
 const IpConfigWindow = "IP_RL_WINDOW"
@@ -59,6 +67,29 @@ func InitConfiguration(file string) *ConfigEnv {
 	}
 }
 
-func GetTokenConfigs() []limiter.Config {
+func GetTokenConfigs() map[string]limiter.Config {
+	var dtos []tokenConfigDTO
+	unmarshalErr := json.Unmarshal([]byte(os.Getenv("TOKENS_CONFIG")), &dtos)
+	if unmarshalErr != nil {
+		logger.Error("Error loading token configs")
+	}
+
+	var configs = make(map[string]limiter.Config)
+	for _, config := range dtos {
+		windowDuration, windowErr := time.ParseDuration(config.Window)
+		if windowErr != nil {
+			logger.Error("Error loading token window", windowErr)
+		}
+
+		blockDuration, blockErr := time.ParseDuration(config.Block)
+		if blockErr != nil {
+			logger.Error("Error loading ip window", blockErr)
+		}
+		configs[config.Token] = limiter.Config{
+			Limit:         config.Limit,
+			Window:        windowDuration,
+			BlockDuration: blockDuration,
+		}
+	}
 	return nil
 }

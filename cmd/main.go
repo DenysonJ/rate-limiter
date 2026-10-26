@@ -22,11 +22,12 @@ func main() {
 	r := gin.New()
 
 	configEnv := configuration.InitConfiguration(".env")
+	tokenConfigs := configuration.GetTokenConfigs()
 
 	limiterStrategy := redisLimiter.NewRedisLimiter(redis.NewClient(&redis.Options{
 		Addr: configEnv.RedisConfig.Host + ":" + configEnv.RedisConfig.Port,
 	}))
-	limiterService := limiter.NewRateLimiter(limiterStrategy, configEnv.IpConfig)
+	limiterService := limiter.NewRateLimiter(limiterStrategy, configEnv.IpConfig, tokenConfigs)
 
 	r.Use(gin.Recovery())
 	r.Use(middleware.RateLimiterMiddleware(limiterService))

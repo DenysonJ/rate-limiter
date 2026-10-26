@@ -19,12 +19,18 @@ type Config struct {
 	BlockDuration time.Duration
 }
 
-func NewRateLimiter(limiterStrategy Limiter, ipConfig Config) *RateLimiter {
-	return &RateLimiter{
+func NewRateLimiter(limiterStrategy Limiter, ipConfig Config, tokenConfigs map[string]Config) *RateLimiter {
+	rl := &RateLimiter{
 		limiterStrategy: limiterStrategy,
 		ipConfig:        ipConfig,
 		tokenConfig:     make(map[string]Config),
 	}
+
+	for k, v := range tokenConfigs {
+		rl.RegisterTokenConfig(k, v)
+	}
+
+	return rl
 }
 
 func (rl *RateLimiter) RegisterTokenConfig(key string, config Config) {
