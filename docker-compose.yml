@@ -11,9 +11,12 @@ services:
     restart: unless-stopped
     networks:
       - localNetwork
+    depends_on:
+      redis:
+        condition: service_healthy
 
   redis:
-    image: redis:7-alpine
+    image: redis:8.10-alpine
     container_name: redis
     ports:
       - "6379:6379"
@@ -26,6 +29,8 @@ services:
       timeout: 3s
       retries: 5
     restart: unless-stopped
+    networks:
+      - localNetwork
 
 volumes:
   redis-data:

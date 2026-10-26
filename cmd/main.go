@@ -9,14 +9,31 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/DenysonJ/rate-limiter/configuration"
+	"github.com/DenysonJ/rate-limiter/internal/infra/http/middleware"
+	redisLimiter "github.com/DenysonJ/rate-limiter/internal/infra/redis"
+	"github.com/DenysonJ/rate-limiter/internal/limiter"
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
 	r := gin.New()
 
+	configEnv := configuration.InitConfiguration(".env")
+
+	limiterStrategy := redisLimiter.NewRedisLimiter(redis.NewClient(&redis.Options{
+		Addr: configEnv.RedisConfig.Host + ":" + configEnv.RedisConfig.Port,
+	}))
+	limiterService := limiter.NewRateLimiter(limiterStrategy, configEnv.IpConfig)
+
 	r.Use(gin.Recovery())
+	r.Use(middleware.RateLimiterMiddleware(limiterService))
+
+	r.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello World")
+	})
 
 	srv := &http.Server{
 		Addr:    ":8080",
@@ -36,8 +53,8 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	select {
-	case <-errCh:
-		return
+	case serverErr := <-errCh:
+		logger.Fatal("server failed: " + serverErr.Error())
 	case <-quit:
 		// proceed to graceful shutdown
 	}
