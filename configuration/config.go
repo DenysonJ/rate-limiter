@@ -91,5 +91,5 @@ func GetTokenConfigs() map[string]limiter.Config {
 			BlockDuration: blockDuration,
 		}
 	}
-	return nil
+	return configs
 }
