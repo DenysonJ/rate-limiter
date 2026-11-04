@@ -68,11 +68,15 @@ func TestRateLimiter_Allow(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			memory := NewMemoryStrategy()
-			rateL := NewRateLimiter(memory, Config{
-				Limit:         5,
-				Window:        5 * time.Second,
-				BlockDuration: 5 * time.Second,
-			})
+			rateL := NewRateLimiter(
+				memory,
+				Config{
+					Limit:         5,
+					Window:        5 * time.Second,
+					BlockDuration: 5 * time.Second,
+				},
+				make(map[string]Config),
+			)
 			rateL.RegisterTokenConfig(tt.key, tt.config)
 
 			for range tt.access - 1 {
